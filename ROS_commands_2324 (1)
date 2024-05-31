@@ -1,0 +1,229 @@
+#Installing ROS1 (Noetic) on Ubuntu 20.04 (Focal Fossa)
+
+# We can also install them both (ros1 & ros2)
+# Instead of sourcing the setup file in my .bashrc
+# make a pair of scripts: go_ros1.sh. and go_ros2.sh
+# That way when you open a new terminal window you can run one script or the other to set
+# that terminal up for that version of ros
+# This way you can effectively run both at the same time in 2 different terminals
+
+#*************Script installation******************
+# For beginners, it is strongly recommended to install ROS with the script provided in the below commands:
+
+#--> WEB Page to follow up the tutorial:
+https://emanual.robotis.com/docs/en/platform/openmanipulator_x/quick_start_guide/
+
+sudo apt update &&
+wget https://raw.githubusercontent.com/ROBOTIS-GIT/robotis_tools/master/install_ros_noetic.sh &&
+chmod 755 ./install_ros_noetic.sh &&
+bash ./install_ros_noetic.sh
+
+# You should get the following lines, and waiting for ENTER to start!
+
+[Note] Target OS version  >>> Ubuntu 20.04.x (Focal Fossa) or Linux Mint 21.x
+[Note] Target ROS version >>> ROS Noetic Ninjemys
+[Note] Catkin workspace   >>> /home/slrv/catkin_ws
+
+#************ MANUAL installation BEGIN ******************
+
+# Please be aware that following MANUAL installation takes a lot more time than installing with the script, but allows flexible choice of package installation. This instruction is not recommended for the beginners.
+
+#First setup your computer to accept software from "packages.ros.org":
+
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+
+#Set up your keys:
+
+sudo apt install curl #if you haven't already installed curl
+curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+
+#Installation ros-noetic
+
+#First, make sure your Debian package index is up-to-date:
+
+sudo apt update & sudo apt upgrade
+
+#Now pick how much of ROS you would like to install.
+
+sudo apt install ros-noetic-desktop-full
+#sudo apt install ros-noetic-desktop
+#sudo apt install ros-noetic-ros-base
+
+#There are even more packages available in ROS. You can always install a specific package #directly -->
+sudo apt install ros-noetic-<PACKAGENAME>
+#e.g. -->
+sudo apt install ros-noetic-slam-gmapping
+
+#To find available packages -->
+apt search ros-noetic
+
+#Dependencies for building packages:
+sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
+
+#Initialize rosdep:
+sudo rosdep init
+rosdep update
+
+#************ MANUAL installation END ******************
+
+*********** Install ROS Packages *****************
+#Installing dependent packages:
+source ~/.bashrc &&
+sudo apt-get install ros-noetic-ros-controllers ros-noetic-gazebo* ros-noetic-moveit* ros-noetic-industrial-core &&
+sudo apt install ros-noetic-dynamixel-sdk ros-noetic-dynamixel-workbench* &&
+sudo apt install ros-noetic-robotis-manipulator
+
+#Downloading and building OpenMANIPULATOR-X packages:
+cd ~/catkin_ws/src/
+git clone -b noetic-devel https://github.com/ROBOTIS-GIT/open_manipulator.git
+git clone -b noetic-devel https://github.com/ROBOTIS-GIT/open_manipulator_msgs.git
+git clone -b noetic-devel https://github.com/ROBOTIS-GIT/open_manipulator_simulations.git
+git clone https://github.com/ROBOTIS-GIT/open_manipulator_dependencies.git
+cd ~/catkin_ws && catkin_make
+
+#Adding "sourcing" commands to bash file not to run them manually
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc &&
+echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc &&
+echo "export ROS_MASTER_URI=http://localhost:11311" >> ~/.bashrc &&
+echo "export ROS_HOSTNAME=localhost" >> ~/.bashrc" &&
+source ~/.bashrc
+
+#Dependencies for building packages
+
+#Up to now you have installed what you need to run the core ROS packages. To create and manage your own ROS workspaces, there are various tools and requirements that are distributed separately. For example, rosinstall is a frequently used command-line tool that enables you to easily download many source trees for ROS packages with one command.
+
+#To install this tool and other dependencies for building ROS packages, run: 
+sudo apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
+
+#Checking the installation:
+printenv | grep ROS
+
+#if output is -->
+ROS_VERSION=1
+ROS_PYTHON_VERSION=3
+ROS_PACKAGE_PATH=/opt/ros/noetic/share
+ROSLISP_PACKAGE_DIRECTORIES=
+ROS_ETC_DIR=/opt/ros/noetic/etc/ros
+ROS_MASTER_URI=http://localhost:11311
+ROS_ROOT=/opt/ros/noetic/share/ros
+ROS_DISTRO=noetic
+
+#--> perfect! / if NOT => close all terminals and run the terminal again
+
+#--> to remove all ros packages:
+sudo apt remove ~nros-noetic-* && sudo apt autoremove
+#You may also want to remove the repostiory:
+sudo rm /etc/apt/sources.list.d/ros.list
+sudo apt update
+sudo apt autoremove
+
+#--> Consider upgrading for packages previously shadowed.
+sudo apt upgrade
+
+#************* Turtlesim *************
+#Don't forget to source following code for every new terminal! (if it was not added to ~/.bashrc)
+source /opt/ros/noetic/setup.bash
+
+gnome-terminal -- roscore && gnome-terminal -- rosrun turtlesim turtlesim_node && gnome-terminal -- rosrun turtlesim turtle_teleop_key
+
+#--> Launching Controller
+roslaunch open_manipulator_controller open_manipulator_controller.launch usb_port:=/dev/ttyACM0 baud_rate:=1000000
+#option1 by keyboard-->
+roslaunch open_manipulator_teleop open_manipulator_teleop_keyboard.launch
+#option2 by GUI -->
+roslaunch open_manipulator_control_gui open_manipulator_control_gui.launch
+#First click on "Timer Start" then "Actuator Enable"
+
+#********** Camera Installation ************
+sudo apt-get install ros-noetic-usb-cam
+
+#Modifying the "usb_cam-test.launch" file as follows (if only you want to change settings):
+#path to file --> /opt/ros/noetic/share/usb_cam/launch
+sudo nano usb_cam-test.launch
+
+<launch>
+  <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="1280" />
+    <param name="image_height" value="720" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="color_format" value="yuv422p" />
+    <param name="framerate" value="30" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+  </node>
+  <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <remap from="image" to="/usb_cam/image_raw"/>
+    <param name="autosize" value="true" />
+  </node>
+</launch>
+
+#ctrl+x to exit from nano and press "y" key to accept saving changes
+
+# movements in the video gets smoother by reducing the resolution and framerate
+# 1920x1080 --> 1600x896 --> 1280x720 --> 640x480
+
+# We've set the resolution to 1280x720 with a framerate of 30 fps
+roslaunch usb_cam usb_cam-test.launch
+
+# more to know about the USB camera:
+lsusb
+
+# and use the busnumber and devicenumber as follows to get all details about the USB device:
+lsusb -s 001:003 -v
+
+************ ArTrackAlvar TAG recognition package ********************
+cd ~/catkin_ws/src
+git clone https://github.com/machinekoder/ar_track_alvar.git -b noetic-devel
+cd ~/catkin_ws && catkin_make
+
+#"pr2_indiv_no_kinect.launch" file should be edited as follows:
+# file path --> ~/catkin_ws/src/ar_track_alvar/ar_track_alvar/launch
+	marker_size: 2.5 (or the size of the markers used)
+	cam_image_topic: usb_cam/image_raw
+	cam_info_topic: usb_cam/camera_info
+	output_frame: world
+	
+***** Edited and working launch file is as follows: *****
+<launch>
+    <arg name="marker_size" default="2.5" />
+    <arg name="max_new_marker_error" default="0.08" />
+    <arg name="max_track_error" default="0.2" />
+    <arg name="cam_image_topic" default="/usb_cam/image_raw" />
+    <arg name="cam_info_topic" default="/usb_cam/camera_info" />    
+    <arg name="output_frame" default="/world" />
+
+    <node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)" />
+</launch>
+
+*********** Calibration of USB camera **************
+#Modify the following code according to your checkerboard:
+# --size 8x6 or 9x7 or another format
+# and the size of squares --square (in meter unit)
+roslaunch usb_cam usb_cam-test.launch
+rosrun camera_calibration cameracalibrator.py --size 10x7 --square 0.021 image:=/usb_cam/image_raw camera:=/usb_cam
+
+********** Marker Recognition *************
+cd ~/catkin_ws/src
+git clone https://github.com/ROBOTIS-GIT/open_manipulator_perceptions.git
+cd ~/catkin_ws && catkin_make
+
+********* Installing pick_and_place application ***************
+cd ~/catkin_ws/src
+git clone https://github.com/ROBOTIS-GIT/open_manipulator_applications.git
+cd ~/catkin_ws && catkin_make
+
+********* READY to try all setup *************
+roscore
+roslaunch usb_cam usb_cam-test.launch
+rosrun tf2_ros static_transform_publisher 0.25 0.09 0.43 -0.835 0 -2.75 /world /usb_cam
+rosrun tf2_ros static_transform_publisher 0.24 .150 0.49 1.57 0.0 -3.14 /world /usb_cam
+#geeft de coordinaten aan de robotarm om de blokjes goed op te pakken
+#order of arguments 	x y z z y x w
+#--> quaternions.online ---> can be used to calculate kinetic transformations
+#--> rostopic echo ar_pose_marker --> useful to get the detected TAG IDs with their positions and orientations
+roslaunch ar_track_alvar pr2_indiv_no_kinect.launch
+roslaunch open_manipulator_description open_manipulator_rviz.launch
+#Loading OpenManipulator-X on RViz
+roslaunch open_manipulator_controller open_manipulator_controller.launch usb_port:=/dev/ttyACM0 baud_rate:=1000000
+roslaunch open_manipulator_pick_and_place open_manipulator_pick_and_place.launch

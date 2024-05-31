@@ -1,0 +1,23 @@
+docker container run -d --name mynginx nginx
+#This command will create a container named mynginx using the "nginx" image and run it in detached mode (indicated by the -d flag), which means the container will run in the background.
+
+docker exec -it mynginx /bin/bash
+#This command will start an interactive Bash shell session inside the mynginx container, allowing you to run commands and make changes to the container.
+
+#Make your changes on the container!!!
+
+#You can exit from the session by pressing CTRL + D or typing exit and then pressing Enter
+
+docker container commit -a "KodeKloud" -m "Changed default NGINX welcome message" mynginx nginx-kodekloud
+#This command will create a new Docker image named nginx-kodekloud from the modified mynginx container. Note that it's considered best practice to use the -a flag to sign the image with an author and include a commit message using the -m flag.
+
+docker push slrv2324/slrv_docker:tagname
+#docker push <account_username/repository_name:pushed_imagename>
+
+docker container run -d --name=hello-nginx-kodekloud nginx-kodekloud
+#This command will create a container named hello-nginx-kodekloud using the nginx-kodekloud image, which includes the changes made to the "nginx" configuration file.
+
+docker exec -it hello-nginx-kodekloud /bin/bash
+#we’ll have to get a shell to the running container
+
+
